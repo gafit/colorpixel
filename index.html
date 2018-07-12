@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html class="no-js" lang="pt" dir="ltr">
+	<head>
+		<title>ColorPixel - GAFIT</title>
+		<meta charset="utf-8">
+        <link rel="canonical" href="https://labs.gafit.com.br/colorpixel/">
+        <meta property="og:locale" content="pt_BR">
+        <meta property="og:url" content="https://labs.gafit.com.br/colorpixel">
+        <meta property="og:site_name" content="ColorPixel - GAFIT">
+        <meta itemprop="name" content="ColorPixel - GAFIT">
+        <meta property="fb:admins" content="gafitautomacao">
+        <meta property="article:publisher" content="https://www.facebook.com/gafitautomacao/">
+        <meta name="robots" content="index,follow">
+        <meta name="description" content="GAFIT's ColorPixel game">
+        <meta itemprop="description" content="GAFIT's ColorPixel game">
+        <meta itemprop="image" content="https://gafit.com.br/assets/images/desenvolvimento_apps_web.jpg">
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="ColorPixel - GAFIT">
+        <meta property="og:description" content="GAFIT's ColorPixel game">
+        <meta property="og:image" content="https://gafit.com.br/assets/images/desenvolvimento_apps_web.jpg">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:site" content="@gafitautomacao">
+        <meta name="twitter:title" content="ColorPixel - GAFIT">
+        <meta name="twitter:description" content="GAFIT's ColorPixel game">
+        <meta name="twitter:image" content="https://gafit.com.br/assets/images/desenvolvimento_apps_web.jpg">
+        <link rel="publisher" href="https://plus.google.com/103053295975386583029">
+        <meta name="author" content="GAFIT - Desenvolvimento de software web e aplicativos Android e iOS">
+		<meta name="description" content="GAFIT's ColorPixel game">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<style>
+			body{
+				margin:0;
+				overflow:hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+		<script>
+			let $m_Canvas,
+				m_Context,
+				m_ShouldDraw = false,
+				m_PrevX = 0,
+				m_PrevY = 0,
+				m_CurrX = 0,
+				m_CurrY = 0,
+				m_CompletionCheckInterval;
+		
+		
+			$(document).ready(function(){
+				$('body').append('<canvas id="canvas" width="' + $(document).width() + '" height="' + $(document).height() + '"></canvas>')
+				$m_Canvas = $('#canvas');
+				m_Context = $m_Canvas[0].getContext('2d');
+				
+				$(window).on('mousemove touchmove', function(e){
+					findxy('move', processTouchEvent(e));
+				}).on('mousedown touchstart', function(e){
+					findxy('down', processTouchEvent(e));
+				}).on('mouseup touchend', function(e){
+					findxy('up', e);
+				});
+				
+				m_CompletionCheckInterval = setInterval(function(){
+					if(!hasTransparentPixel()){
+						clearInterval(m_CompletionCheckInterval);
+						alert('Parabéns, você coloriu todos os pixels da tela');
+					}
+				});
+			});
+			
+			function processTouchEvent(p_Event) {
+				if(p_Event.touches != undefined){
+					p_Event.clientX = p_Event.touches[0].clientX;
+					p_Event.clientY = p_Event.touches[0].clientY;
+				}
+				return p_Event;
+			}
+			
+			function randomRGB() {
+				return 'rgb('+Math.floor(Math.random() * 256)+','+Math.floor(Math.random() * 256)+','+Math.floor(Math.random() * 256)+')';
+			}
+			
+			function hasTransparentPixel(){
+				let v_ImageData = m_Context.getImageData(0,0, $m_Canvas.width(), $m_Canvas.height()),
+					v_Pixels = v_ImageData.data;
+
+				let v_RedIndex = 0, v_GreenIndex = 1, v_BlueIndex = 2, v_AlphaIndex = 3;
+				for(let c_Index = 0; c_Index < v_Pixels.length; c_Index+=4){
+				  if (v_Pixels[c_Index+v_AlphaIndex] == 0) {
+					  return true;
+				  }
+				}
+				return false;
+			}
+    
+			function draw() {
+				m_Context.beginPath();
+				m_Context.moveTo(m_PrevX, m_PrevY);
+				m_Context.lineTo(m_CurrX, m_CurrY);
+				m_Context.strokeStyle = randomRGB();
+				m_Context.lineWidth = 1;
+				m_Context.stroke();
+				m_Context.closePath();
+			}
+			
+			function erase() {
+				let v_Confirm = confirm('Erase?');
+				if (v_Confirm) {
+					m_Context.clearRect(0, 0, $m_Canvas.width(), $m_Canvas.height());
+				}
+			}
+			
+			function save() {
+				document.getElementById('canvasimg').style.border = '2px solid';
+				var dataURL = canvas.toDataURL();
+				document.getElementById('canvasimg').src = dataURL;
+				document.getElementById('canvasimg').style.display = 'inline';
+			}
+			
+			function findxy(p_Trigger, p_Event) {
+				if (p_Trigger == 'down') {
+					m_PrevX = m_CurrX;
+					m_PrevY = m_CurrY;
+					m_CurrX = p_Event.clientX;
+					m_CurrY = p_Event.clientY;
+			
+					m_ShouldDraw = true;
+					
+					m_Context.beginPath();
+					m_Context.fillStyle = randomRGB();
+					m_Context.fillRect(m_CurrX, m_CurrX, 1, 1);
+					m_Context.closePath();
+				}
+				if (p_Trigger == 'up') {
+					m_ShouldDraw = false;
+				}
+				if (p_Trigger == 'move') {
+					if (m_ShouldDraw) {
+						m_PrevX = m_CurrX;
+						m_PrevY = m_CurrY;
+						m_CurrX = p_Event.clientX - $m_Canvas.offset().left;
+						m_CurrY = p_Event.clientY - $m_Canvas.offset().top;
+						draw();
+					}
+				}
+			}
+		</script>
+	</body>
+</html>
+   
